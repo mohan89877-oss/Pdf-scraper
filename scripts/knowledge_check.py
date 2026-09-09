@@ -5,8 +5,8 @@ from quota_manager import QuotaManager
 from llm_clients import call_gemini_resolve
 import os
 
-MODEL = "gemini-2.0-flash-lite"
-MODEL_ID = "gemini-2.0-flash-lite"
+MODEL = "gemini-2.5-flash-lite"
+MODEL_ID = "gemini-2.5-flash-lite"
 
 
 def main(pdf_stem):
