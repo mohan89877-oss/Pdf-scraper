@@ -8,7 +8,7 @@ import os
 CHARS_PER_CHUNK = 12000   # ~3-4k tokens, keeps Groq's 12K TPM/70b comfortably safe
 OVERLAP_PAGES = 2
 
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 GROQ_MODEL = "groq-llama-3.3-70b"
 GROQ_MODEL_ID = "llama-3.3-70b-versatile"
 
