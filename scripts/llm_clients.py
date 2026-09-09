@@ -45,9 +45,11 @@ TEXT:
 
 
 def _backoff_retry(fn, max_tries=5):
+    last_resp = None
     for attempt in range(max_tries):
         try:
             resp = fn()
+            last_resp = resp
             if resp.status_code == 429 or resp.status_code >= 500:
                 time.sleep(2 ** attempt)
                 continue
@@ -55,6 +57,8 @@ def _backoff_retry(fn, max_tries=5):
             return resp
         except requests.RequestException:
             time.sleep(2 ** attempt)
+    if last_resp is not None:
+        print(f"Final failure — status {last_resp.status_code}: {last_resp.text[:1000]}")
     raise RuntimeError("Max retries exceeded")
 
 
