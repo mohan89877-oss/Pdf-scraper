@@ -78,8 +78,8 @@ def call_gemini(model, text, api_key):
     return json.loads(raw).get("questions", [])
 
 
-def call_groq(model, text, api_key):
-    url = "https://api.groq.com/openai/v1/chat/completions"
+def call_mistral(model, text, api_key):
+    url = "https://api.mistral.ai/v1/chat/completions"
     headers = {"Authorization": f"Bearer {api_key}"}
     body = {
         "model": model,
