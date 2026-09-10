@@ -1,11 +1,42 @@
-name: PDF‑Scraper Pipeline
+name: PDF-Scraper Pipeline
 
 on:
   push:
     branches: [ main ]        # adjust if your default branch has another name
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 6 * * *'       # adjust/remove if you don't want a daily scheduled run
 
 jobs:
   run-scraper:
-    runs-on: windows-latest   # the scraper uses Windows‑specific paths (Tesseract, etc.)
+    runs-on: windows-latest   # the scraper uses Windows-specific paths (Tesseract, etc.)
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Tesseract OCR
+        run: choco install tesseract --yes
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python run_pipeline.py
+
+      - name: Commit and push results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add state output review.log
+          git diff --cached --quiet || git commit -m "Update pipeline state and output [skip ci]"
+          git push
