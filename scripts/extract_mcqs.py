@@ -8,7 +8,7 @@ from quota_manager import QuotaManager
 
 # Configuration constants
 GEMINI_MODEL = "gemini-3.5-flash-lite"
-MISTRAL_MODEL = "mistral-large-latest"
+MISTRAL_MODEL = "mistral-small"
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
 
