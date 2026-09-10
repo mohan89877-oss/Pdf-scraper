@@ -16,8 +16,10 @@ SCHEMA = {
                     "options": {
                         "type": "object",
                         "properties": {
-                            "a": {"type": "string"}, "b": {"type": "string"},
-                            "c": {"type": "string"}, "d": {"type": "string"},
+                            "a": {"type": "string"},
+                            "b": {"type": "string"},
+                            "c": {"type": "string"},
+                            "d": {"type": "string"},
                         },
                         "required": ["a", "b", "c", "d"],
                     },
@@ -58,7 +60,12 @@ def _backoff_retry(fn, max_tries=5):
         except requests.RequestException:
             time.sleep(2 ** attempt)
     if last_resp is not None:
-        print(f"Final failure — status {last_resp.status_code}: {last_resp.text[:1000]}")
+        # Safely decode to avoid UnicodeEncodeError on Windows consoles
+        try:
+            text_preview = last_resp.text[:1000]
+        except UnicodeError:
+            text_preview = last_resp.content[:1000].decode("utf-8", errors="replace")
+        print(f"Final failure — status {last_resp.status_code}: {text_preview}")
     raise RuntimeError("Max retries exceeded")
 
 
@@ -83,8 +90,13 @@ def call_mistral(model, text, api_key):
     headers = {"Authorization": f"Bearer {api_key}"}
     body = {
         "model": model,
-        "messages": [{"role": "user", "content": EXTRACT_PROMPT.format(text=text)
-                       + "\n\nRespond with a JSON object: {\"questions\": [...]}"}],
+        "messages": [
+            {
+                "role": "user",
+                "content": EXTRACT_PROMPT.format(text=text)
+                + "\n\nRespond with a JSON object: {\"questions\": [...]}"
+            }
+        ],
         "response_format": {"type": "json_object"},
         "temperature": 0,
     }
@@ -95,7 +107,7 @@ def call_mistral(model, text, api_key):
 
 
 def call_gemini_resolve(model, item_a, item_b, api_key):
-    """Knowledge-based resolution for a disputed question between two extractor outputs."""
+    """Knowledge‑based resolution for a disputed question between two extractor outputs."""
     prompt = f"""Two automated extractors read the same source text differently. Using general
 subject knowledge, decide which reading (A or B) is internally coherent and has a correct
 marked answer among its options. If you cannot confidently decide, say "unresolved".
