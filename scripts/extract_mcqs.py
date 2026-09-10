@@ -5,12 +5,12 @@ from quota_manager import QuotaManager
 from llm_clients import call_gemini, call_groq
 import os
 
-CHARS_PER_CHUNK = 12000   # ~3-4k tokens, keeps Groq's 12K TPM/70b comfortably safe
+CHARS_PER_CHUNK = 12000   # ~3-4k tokens, keeps things comfortably safe
 OVERLAP_PAGES = 2
 
 GEMINI_MODEL = "gemini-3.5-flash-lite"
-GROQ_MODEL = "groq-llama-3.3-70b"
-GROQ_MODEL_ID = "llama-3.3-70b-versatile"
+GROQ_MODEL = "groq-llama-3.1-8b"
+GROQ_MODEL_ID = "llama-3.1-8b-instant"
 
 
 def build_chunks(pages):
