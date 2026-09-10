@@ -30,8 +30,21 @@ jobs:
           MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
         run: python scripts/run_pipeline.py
 
+      - name: Check output files
+        run: |
+          echo "Listing output directory:"
+          ls -la output/
+          echo "Git status:"
+          git status
+
+      - name: Set git config
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+
       - name: Commit results
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "MCQ pipeline: update state/output"
           file_pattern: "state/** output/** review.log"
+          commit_options: '--no-verify'
