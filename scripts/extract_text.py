@@ -8,7 +8,7 @@ import io
 
 # Configure Tesseract path for Windows (adjust if installed elsewhere)
 try:
-    pytesseract.pytesseract.pytesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+    pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 except Exception as e:
     print(f"Warning: Could not set Tesseract path: {e}")
 
