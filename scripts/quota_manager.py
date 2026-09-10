@@ -11,9 +11,10 @@ STATE_FILE = Path("state/quota.json")
 SAFETY_MARGIN = 0.8
 
 LIMITS = {
-    "gemini-1.5-flash":      {"rpm": 15, "rpd": 1500},
-    "gemini-2.0-flash-lite": {"rpm": 30, "rpd": 1500},
-    "groq-llama-3.3-70b":    {"rpm": 30, "rpd": 1000},
+    # Confirmed from AI Studio rate-limit dashboard, Sep 2026.
+    "gemini-3.5-flash-lite": {"rpm": 10, "rpd": 500},
+    "gemini-2.5-flash-lite": {"rpm": 10, "rpd": 20},
+    "groq-llama-3.3-70b":    {"rpm": 30, "rpd": 1000},  # still unverified — Groq's console shows this
 }
 
 
