@@ -7,7 +7,7 @@ from llm_clients import call_gemini, call_mistral
 from quota_manager import QuotaManager
 
 # Configuration constants
-GEMINI_MODEL = "gemini-2.0-flash-lite"
+GEMINI_MODEL = "gemini-3.5-flash-lite"
 MISTRAL_MODEL = "mistral-large-latest"
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
