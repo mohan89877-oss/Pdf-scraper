@@ -1,10 +1,14 @@
 import time
 import json
+import sys
 from pathlib import Path
 
-# Add at the top of the file
+# Configuration constants
 MAX_RETRIES = 3
 RETRY_DELAY = 2  # seconds
+GEMINI_MODEL = "gemini-2.0-flash"
+MISTRAL_MODEL = "mistral-large-latest"
+MISTRAL_MODEL_ID = "mistral-large-latest"
 
 def call_with_retry(api_call_fn, model_name, *args, **kwargs):
     """Retry API calls with exponential backoff on rate limit errors."""
@@ -22,11 +26,33 @@ def call_with_retry(api_call_fn, model_name, *args, **kwargs):
                     continue
             raise
 
-# Then update the main function (lines 85 and 89):
-if not qm.register_call(GEMINI_MODEL):
-    break
-gemini_qs = call_with_retry(call_gemini, GEMINI_MODEL, GEMINI_MODEL, text, gemini_key)
+def call_gemini(model, text, api_key):
+    """Call Gemini API to extract MCQs"""
+    # TODO: Implement Gemini API call
+    pass
 
-if not qm.register_call(MISTRAL_MODEL):
-    break
-mistral_qs = call_with_retry(call_mistral, MISTRAL_MODEL, MISTRAL_MODEL_ID, text, mistral_key)
+def call_mistral(model_id, text, api_key):
+    """Call Mistral API to extract MCQs"""
+    # TODO: Implement Mistral API call
+    pass
+
+def main():
+    """Main entry point for MCQ extraction"""
+    if len(sys.argv) < 2:
+        print("Usage: python extract_mcqs.py <pdf_stem>")
+        sys.exit(1)
+    
+    stem = sys.argv[1]
+    state_dir = Path("state") / stem
+    
+    # TODO: Implement the main extraction logic here
+    # 1. Read extracted text from state/stem/text.txt
+    # 2. Call Gemini and Mistral APIs with retry logic
+    # 3. Save MCQs to output
+    # 4. Create state/stem/extract_complete.flag with content "1"
+    
+    extract_flag = state_dir / "extract_complete.flag"
+    extract_flag.write_text("1")
+
+if __name__ == "__main__":
+    main()
