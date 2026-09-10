@@ -32,14 +32,19 @@ def call_with_retry(api_call_fn, model_name, *args, **kwargs):
 
 def extract_mcqs_from_text(pages, state_dir, pdf_stem):
     """
-    Extract MCQs using Gemini and Mistral APIs.
+    Extract MCQs using Gemini and Mistral APIs (both REQUIRED).
     Saves results to state/{stem}/extracted.json and creates flagged/accepted lists.
     """
     gemini_key = os.environ.get("GEMINI_API_KEY")
     mistral_key = os.environ.get("MISTRAL_API_KEY")
     
+    # Check that BOTH keys are present (mandatory)
     if not gemini_key:
         print("ERROR: GEMINI_API_KEY not set in environment")
+        return False
+    
+    if not mistral_key:
+        print("ERROR: MISTRAL_API_KEY not set in environment (REQUIRED)")
         return False
     
     qm = QuotaManager()
@@ -52,7 +57,7 @@ def extract_mcqs_from_text(pages, state_dir, pdf_stem):
     gemini_results = []
     mistral_results = []
     
-    # Call Gemini if quota available
+    # Call Gemini (REQUIRED)
     if qm.can_call(GEMINI_MODEL):
         if qm.register_call(GEMINI_MODEL):
             try:
@@ -64,11 +69,13 @@ def extract_mcqs_from_text(pages, state_dir, pdf_stem):
                 print(f"  → Extracted {len(gemini_results)} questions from Gemini")
             except Exception as e:
                 print(f"ERROR calling Gemini: {e}")
+                return False
     else:
         print(f"Gemini quota exhausted for today")
+        return False
     
-    # Call Mistral if quota available and API key provided
-    if mistral_key and qm.can_call(MISTRAL_MODEL):
+    # Call Mistral (REQUIRED - NOT OPTIONAL)
+    if qm.can_call(MISTRAL_MODEL):
         if qm.register_call(MISTRAL_MODEL):
             try:
                 print(f"Calling {MISTRAL_MODEL}...")
@@ -79,11 +86,10 @@ def extract_mcqs_from_text(pages, state_dir, pdf_stem):
                 print(f"  → Extracted {len(mistral_results)} questions from Mistral")
             except Exception as e:
                 print(f"ERROR calling Mistral: {e}")
+                return False
     else:
-        if not mistral_key:
-            print("Note: MISTRAL_API_KEY not set, skipping Mistral extraction")
-        else:
-            print(f"Mistral quota exhausted for today")
+        print(f"Mistral quota exhausted for today")
+        return False
     
     # Merge results: if both extractors found the same question (by q_no), flag it for review
     # Otherwise accept it as-is
@@ -106,7 +112,7 @@ def extract_mcqs_from_text(pages, state_dir, pdf_stem):
                 accepted.append(g)
             else:
                 # Disagreement — flag for manual review via knowledge_check.py
-                flagged.append({"q_no": q_no, "gemini": g, "groq": m})
+                flagged.append({"q_no": q_no, "gemini": g, "mistral": m})
         elif g:
             accepted.append(g)
         elif m:
