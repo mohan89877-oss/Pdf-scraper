@@ -8,8 +8,8 @@ import os
 # ----------------------------------------------------------------------
 # Model used for the knowledge‑check (resolution) step
 # ----------------------------------------------------------------------
-MODEL = "gemini-2.5-flash-lite"
-MODEL_ID = "gemini-2.5-flash-lite"
+MODEL = "gemini-3.5-flash-lite"
+MODEL_ID = "gemini-3.5-flash-lite"
 
 
 def main(pdf_stem):
