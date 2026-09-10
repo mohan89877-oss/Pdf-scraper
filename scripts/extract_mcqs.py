@@ -1,14 +1,17 @@
 import time
 import json
 import sys
+import os
 from pathlib import Path
+from llm_clients import call_gemini, call_mistral
+from quota_manager import QuotaManager
 
 # Configuration constants
-MAX_RETRIES = 3
-RETRY_DELAY = 2  # seconds
 GEMINI_MODEL = "gemini-2.0-flash"
 MISTRAL_MODEL = "mistral-large-latest"
-MISTRAL_MODEL_ID = "mistral-large-latest"
+MAX_RETRIES = 3
+RETRY_DELAY = 2  # seconds
+
 
 def call_with_retry(api_call_fn, model_name, *args, **kwargs):
     """Retry API calls with exponential backoff on rate limit errors."""
@@ -26,15 +29,111 @@ def call_with_retry(api_call_fn, model_name, *args, **kwargs):
                     continue
             raise
 
-def call_gemini(model, text, api_key):
-    """Call Gemini API to extract MCQs"""
-    # TODO: Implement Gemini API call
-    pass
 
-def call_mistral(model_id, text, api_key):
-    """Call Mistral API to extract MCQs"""
-    # TODO: Implement Mistral API call
-    pass
+def extract_mcqs_from_text(pages, state_dir, pdf_stem):
+    """
+    Extract MCQs using Gemini and Mistral APIs.
+    Saves results to state/{stem}/extracted.json and creates flagged/accepted lists.
+    """
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    mistral_key = os.environ.get("MISTRAL_API_KEY")
+    
+    if not gemini_key:
+        print("ERROR: GEMINI_API_KEY not set in environment")
+        return False
+    
+    qm = QuotaManager()
+    
+    # Combine all page text
+    full_text = "\n\n".join([p["text"] for p in pages])
+    
+    print(f"Extracting MCQs from {len(pages)} pages ({len(full_text)} chars)...")
+    
+    gemini_results = []
+    mistral_results = []
+    
+    # Call Gemini if quota available
+    if qm.can_call(GEMINI_MODEL):
+        if qm.register_call(GEMINI_MODEL):
+            try:
+                print(f"Calling {GEMINI_MODEL}...")
+                gemini_results = call_with_retry(
+                    call_gemini, GEMINI_MODEL,
+                    GEMINI_MODEL, full_text, gemini_key
+                )
+                print(f"  → Extracted {len(gemini_results)} questions from Gemini")
+            except Exception as e:
+                print(f"ERROR calling Gemini: {e}")
+    else:
+        print(f"Gemini quota exhausted for today")
+    
+    # Call Mistral if quota available and API key provided
+    if mistral_key and qm.can_call(MISTRAL_MODEL):
+        if qm.register_call(MISTRAL_MODEL):
+            try:
+                print(f"Calling {MISTRAL_MODEL}...")
+                mistral_results = call_with_retry(
+                    call_mistral, MISTRAL_MODEL,
+                    MISTRAL_MODEL, full_text, mistral_key
+                )
+                print(f"  → Extracted {len(mistral_results)} questions from Mistral")
+            except Exception as e:
+                print(f"ERROR calling Mistral: {e}")
+    else:
+        if not mistral_key:
+            print("Note: MISTRAL_API_KEY not set, skipping Mistral extraction")
+        else:
+            print(f"Mistral quota exhausted for today")
+    
+    # Merge results: if both extractors found the same question (by q_no), flag it for review
+    # Otherwise accept it as-is
+    accepted = []
+    flagged = []
+    
+    # Index by q_no for comparison
+    gemini_by_qno = {q["q_no"]: q for q in gemini_results}
+    mistral_by_qno = {q["q_no"]: q for q in mistral_results}
+    
+    all_qnos = set(gemini_by_qno.keys()) | set(mistral_by_qno.keys())
+    
+    for q_no in sorted(all_qnos):
+        g = gemini_by_qno.get(q_no)
+        m = mistral_by_qno.get(q_no)
+        
+        if g and m:
+            # Both found it — check if they agree
+            if g == m:
+                accepted.append(g)
+            else:
+                # Disagreement — flag for manual review via knowledge_check.py
+                flagged.append({"q_no": q_no, "gemini": g, "groq": m})
+        elif g:
+            accepted.append(g)
+        elif m:
+            accepted.append(m)
+    
+    # Save results
+    extracted_file = state_dir / "extracted.json"
+    extracted_file.write_text(json.dumps({
+        "gemini": gemini_results,
+        "mistral": mistral_results,
+    }, indent=2))
+    print(f"Saved extraction results to {extracted_file}")
+    
+    accepted_file = state_dir / "accepted.json"
+    accepted_file.write_text(json.dumps(accepted, indent=2))
+    print(f"Saved {len(accepted)} accepted questions to {accepted_file}")
+    
+    flagged_file = state_dir / "flagged.json"
+    flagged_file.write_text(json.dumps(flagged, indent=2))
+    print(f"Saved {len(flagged)} flagged questions to {flagged_file}")
+    
+    # Initialize resolve progress
+    progress_file = state_dir / "resolve_progress.json"
+    progress_file.write_text(json.dumps({"resolved_idx": []}, indent=2))
+    
+    return True
+
 
 def main():
     """Main entry point for MCQ extraction"""
@@ -45,14 +144,23 @@ def main():
     stem = sys.argv[1]
     state_dir = Path("state") / stem
     
-    # TODO: Implement the main extraction logic here
-    # 1. Read extracted text from state/stem/text.txt
-    # 2. Call Gemini and Mistral APIs with retry logic
-    # 3. Save MCQs to output
-    # 4. Create state/stem/extract_complete.flag with content "1"
+    # Read extracted pages
+    pages_file = state_dir / "pages.json"
+    if not pages_file.exists():
+        print(f"ERROR: {pages_file} not found. Run extract_text.py first.")
+        sys.exit(1)
     
+    pages = json.loads(pages_file.read_text())
+    print(f"Loaded {len(pages)} pages from {pages_file}")
+    
+    # Extract MCQs
+    success = extract_mcqs_from_text(pages, state_dir, stem)
+    
+    # Mark extraction as complete
     extract_flag = state_dir / "extract_complete.flag"
-    extract_flag.write_text("1")
+    extract_flag.write_text("1" if success else "0")
+    print(f"Extraction complete: {extract_flag}")
+
 
 if __name__ == "__main__":
     main()
