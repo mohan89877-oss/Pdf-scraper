@@ -2,9 +2,11 @@ import sys
 import subprocess
 from pathlib import Path
 
+SCRIPTS_DIR = Path("scripts")
 
-def run(*args):
-    subprocess.run([sys.executable] + list(args), check=True, cwd="scripts")
+
+def run(script, *args):
+    subprocess.run([sys.executable, str(SCRIPTS_DIR / script)] + list(args), check=True)
 
 
 def main():
@@ -14,7 +16,7 @@ def main():
         state_dir = Path("state") / stem
         state_dir.mkdir(parents=True, exist_ok=True)
 
-        run("extract_text.py", str(Path("..") / pdf_path))
+        run("extract_text.py", str(pdf_path))
         run("extract_mcqs.py", stem)
 
         extract_flag = state_dir / "extract_complete.flag"
