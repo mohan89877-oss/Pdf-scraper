@@ -11,9 +11,11 @@ STATE_FILE = Path("state/quota.json")
 SAFETY_MARGIN = 0.8
 
 LIMITS = {
+    "gemini-2.0-flash": {"rpm": 10, "rpd": 500},  # ADD THIS
     "gemini-3.5-flash-lite": {"rpm": 10, "rpd": 500},
     "gemini-2.5-flash-lite": {"rpm": 10, "rpd": 20},
-    "mistral-small":         {"rpm": 50, "rpd": 2000},  # official free tier: 1 req/sec, 500K TPM, 1B tokens/month
+    "mistral-large-latest": {"rpm": 50, "rpd": 2000},  # ADD THIS
+    "mistral-small":         {"rpm": 50, "rpd": 2000},
 }
 
 
