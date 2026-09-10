@@ -2,15 +2,15 @@ import sys
 import json
 from pathlib import Path
 from quota_manager import QuotaManager
-from llm_clients import call_gemini, call_groq
+from llm_clients import call_gemini, call_mistral
 import os
 
 CHARS_PER_CHUNK = 12000   # ~3-4k tokens, keeps things comfortably safe
 OVERLAP_PAGES = 2
 
 GEMINI_MODEL = "gemini-3.5-flash-lite"
-GROQ_MODEL = "groq-llama-3.1-8b"
-GROQ_MODEL_ID = "llama-3.1-8b-instant"
+MISTRAL_MODEL = "mistral-small"
+MISTRAL_MODEL_ID = "mistral-small-latest"
 
 
 def build_chunks(pages):
@@ -38,20 +38,20 @@ def normalize(q):
     }
 
 
-def diff_and_merge(gemini_qs, groq_qs, accepted, flagged):
+def diff_and_merge(gemini_qs, mistral_qs, accepted, flagged):
     by_no_g = {q["q_no"]: q for q in gemini_qs if q.get("q_no") is not None}
-    by_no_r = {q["q_no"]: q for q in groq_qs if q.get("q_no") is not None}
-    all_nos = set(by_no_g) | set(by_no_r)
+    by_no_m = {q["q_no"]: q for q in mistral_qs if q.get("q_no") is not None}
+    all_nos = set(by_no_g) | set(by_no_m)
 
     for no in all_nos:
-        g, r = by_no_g.get(no), by_no_r.get(no)
-        if g and r and normalize(g) == normalize(r):
+        g, m = by_no_g.get(no), by_no_m.get(no)
+        if g and m and normalize(g) == normalize(m):
             accepted.append(g)
-        elif g and r:
-            flagged.append({"q_no": no, "gemini": g, "groq": r})
+        elif g and m:
+            flagged.append({"q_no": no, "gemini": g, "mistral": m})
         else:
             # only one model found it at all — not a verified match, flag it
-            flagged.append({"q_no": no, "gemini": g, "groq": r})
+            flagged.append({"q_no": no, "gemini": g, "mistral": m})
 
 
 def main(pdf_stem):
@@ -69,12 +69,12 @@ def main(pdf_stem):
 
     qm = QuotaManager()
     gemini_key = os.environ["GEMINI_API_KEY"]
-    groq_key = os.environ["GROQ_API_KEY"]
+    mistral_key = os.environ["MISTRAL_API_KEY"]
 
     for idx, chunk in enumerate(chunks):
         if idx in progress["done_chunks"]:
             continue
-        if not qm.can_call(GEMINI_MODEL) or not qm.can_call(GROQ_MODEL):
+        if not qm.can_call(GEMINI_MODEL) or not qm.can_call(MISTRAL_MODEL):
             print("Quota budget reached for today — stopping cleanly, will resume next run.")
             break
 
@@ -84,11 +84,11 @@ def main(pdf_stem):
             break
         gemini_qs = call_gemini(GEMINI_MODEL, text, gemini_key)
 
-        if not qm.register_call(GROQ_MODEL):
+        if not qm.register_call(MISTRAL_MODEL):
             break
-        groq_qs = call_groq(GROQ_MODEL_ID, text, groq_key)
+        mistral_qs = call_mistral(MISTRAL_MODEL_ID, text, mistral_key)
 
-        diff_and_merge(gemini_qs, groq_qs, accepted, flagged)
+        diff_and_merge(gemini_qs, mistral_qs, accepted, flagged)
 
         progress["done_chunks"].append(idx)
         progress_file.write_text(json.dumps(progress, indent=2))
