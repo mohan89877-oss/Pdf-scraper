@@ -31,7 +31,7 @@ jobs:
       - name: Run pipeline
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python run_pipeline.py
+        run: python scripts/run_pipeline.py
 
       - name: Commit and push results
         run: |
