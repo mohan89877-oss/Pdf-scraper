@@ -6,15 +6,14 @@ from zoneinfo import ZoneInfo
 
 STATE_FILE = Path("state/quota.json")
 
-# ---- Published free-tier limits (verify/adjust in each provider's console —
-# these drift and can vary per-project). We apply SAFETY_MARGIN below these. ----
+# ---- Confirmed from AI Studio rate-limit dashboard / Groq docs, Sep 2026. ----
+# Re-check periodically — these values can change without notice.
 SAFETY_MARGIN = 0.8
 
 LIMITS = {
-    # Confirmed from AI Studio rate-limit dashboard, Sep 2026.
     "gemini-3.5-flash-lite": {"rpm": 10, "rpd": 500},
     "gemini-2.5-flash-lite": {"rpm": 10, "rpd": 20},
-    "groq-llama-3.3-70b":    {"rpm": 30, "rpd": 1000},  # still unverified — Groq's console shows this
+    "groq-llama-3.1-8b":     {"rpm": 30, "rpd": 1000},
 }
 
 
