@@ -15,8 +15,7 @@ LIMITS = {
     "gemini-2.0-flash-lite": {"rpm": 10, "rpd": 500},
     "gemini-2.5-flash-lite": {"rpm": 10, "rpd": 20},
     "gemini-3.5-flash-lite": {"rpm": 10, "rpd": 500},
-    "mistral-large-latest": {"rpm": 50, "rpd": 2000},
-    "mistral-small":         {"rpm": 50, "rpd": 2000},
+    "mistral-small": {"rpm": 50, "rpd": 2000},
 }
 
 
